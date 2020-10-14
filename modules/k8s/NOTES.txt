@@ -1,0 +1,88 @@
+
+Steps based on  https://github.com/yankils/Simple-DevOps-Project/blob/master/Kubernetes/Kubernetes-setup.MD
+
+0. ssh -i ~/.aws/kuber-k-p.pem ubuntu@xx.xxx.xx.xx
+
+1. Access Key ID and Secret Access Key are not required. Only region
+
+ubuntu@ip-10-0-1-163:~$ aws configure
+AWS Access Key ID [None]: 
+AWS Secret Access Key [None]: 
+Default region name [None]: us-east-1
+Default output format [None]: 
+
+2. Route53 - create private hosted zone 
+    goldmedal.tech 
+    vpc - main
+
+3. Create s3 bucket 
+    demo.k8s.goldmedal.tech 
+4. 
+    export KOPS_STATE_STORE=s3://demo.k8s.goldmedal.tech
+
+5. 
+    ssh-keygen
+      /.ssh/id_rsa 
+
+6. create cluster 
+
+    kops create cluster --cloud=aws --zones=us-east-1a --name=demo.k8s.goldmedal.tech --dns-zone=goldmedal.tech --dns private 
+Suggestions:
+ * list clusters with: kops get cluster
+ * edit this cluster with: kops edit cluster demo.k8s.goldmedal.tech
+ * edit your node instance group: kops edit ig --name=demo.k8s.goldmedal.tech nodes
+ * edit your master instance group: kops edit ig --name=demo.k8s.goldmedal.tech master-us-east-1a
+
+
+    kops edit ig --name=demo.k8s.goldmedal.tech master-us-east-1a  (change machin type to t2.micro)
+
+        Version: kops.k8s.io/v1alpha2
+        kind: InstanceGroup
+        metadata:
+          creationTimestamp: "2020-10-13T11:51:55Z"
+          labels:
+            kops.k8s.io/cluster: demo.k8s.goldmedal.tech
+          name: master-us-east-1a
+        spec:
+          image: 099720109477/ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20200907
+          machineType: t2.micro
+          maxSize: 1
+          minSize: 1
+          nodeLabels:
+            kops.k8s.io/instancegroup: master-us-east-1a
+          role: Master
+          subnets:
+          - us-east-1a
+
+    kops update cluster demo.k8s.goldmedal.tech --yes
+
+
+
+Cluster is starting.  It should be ready in a few minutes.
+
+Suggestions:
+ * validate cluster: kops validate cluster --wait 10m
+ * list nodes: kubectl get nodes --show-labels
+ * ssh to the master: ssh -i ~/.ssh/id_rsa ubuntu@api.demo.k8s.goldmedal.tech
+ * the ubuntu user is specific to Ubuntu. If not using Ubuntu please use the appropriate user based on your OS.
+ * read about installing addons at: https://kops.sigs.k8s.io/operations/addons.
+
+kops validate cluster --wait 10m
+
+ssh -i ~/.ssh/id_rsa ubuntu@api.demo.k8s.goldmedal.tech
+
+ubuntu@ip-172-20-61-42:~$ kubectl get nodes
+NAME                            STATUS   ROLES    AGE     VERSION
+ip-172-20-51-125.ec2.internal   Ready    node     3m32s   v1.18.9
+ip-172-20-60-149.ec2.internal   Ready    node     3m21s   v1.18.9
+ip-172-20-61-42.ec2.internal    Ready    master   6m27s   v1.18.9
+
+
+No need to upgrade kubectl version
+
+uubuntu@ip-172-20-61-42:~$ kubectl version --short
+Client Version: v1.18.9
+Server Version: v1.18.9
+
+kubectl -f apply deployment.yml
+kubectl -f apply service.yml 

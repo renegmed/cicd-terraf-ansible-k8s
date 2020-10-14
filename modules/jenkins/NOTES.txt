@@ -1,0 +1,46 @@
+Setting up Jenkins using terraform
+
+1.  $ terraform init 
+
+2.  $ make keys
+
+3.  $ make apply 
+
+This created jenkins machine (Jenkins-Server) but not yet 
+the apps machine ("aws_instance" "app-instance"  count=0).
+
+$ ssh -i ~/.aws/kuber-k-p ubuntu@3.238.18.126
+
+# ls -als /var/lib/jenkins
+
+# sudo -s 
+
+# ps aux | grep jenkins 
+
+# cat /var/log/cloud-init-output.log
+
+# cat /var/log/jenkins/jenkins.log
+
+
+
+Open Jenkins browser ( refer to resource "aws_security_group" "jenkins-securitygroup")
+
+http://3.238.18.126:8080
+
+# cat /var/lib/jenkins/secrets/initialAdminPassword 
+
+
+Plugins
+    Publish Over SSH 
+
+On docker server, enable ssh
+    $> vi /etc/ssh/sshd_config 
+        PasswordAuthentication yes 
+    $> systemctl sshd reload 
+
+Jenkins - Manage Jenkins - Configure System - Publish over SSH
+    SSH Server 
+        Name: docker-host
+        Hostname:  <docker server ip address - $> ip addr>
+        Username: dockeradmin 
+        Phrasename: dockeradmin (password)
