@@ -1,2 +1,8 @@
 Status: working
 
+
+kops create cluster --cloud=aws --zones=us-east-1a --name=k8s.goldmedal.tech-9fc5qa5h --dns-zone=goldmedal.tech --dns private 
+
+W1014 15:23:06.216376    2622 executor.go:128] error running task "IAMRolePolicy/masters.k8s.goldmedal.tech-9fc5qa5h" 
+    (4m48s remaining to succeed): error rendering PolicyDocument: error opening resource: DNS ZoneID not set
+

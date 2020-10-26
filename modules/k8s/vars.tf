@@ -32,3 +32,7 @@ variable "security_group"{
 variable "k8s_role_name" {
 
 }
+
+variable "route_name" {
+
+}

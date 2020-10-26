@@ -20,6 +20,9 @@ if [ "`echo -n $DEVICE_FS`" == "" ] ; then
   lvcreate --name volume1 -l 100%FREE data
   mkfs.ext4 /dev/data/volume1
 fi
+
+# sudo hostname jenkins-server
+
 mkdir -p /var/lib/jenkins
 echo '/dev/data/volume1 /var/lib/jenkins ext4 defaults 0 0' >> /etc/fstab
 mount /var/lib/jenkins
@@ -31,6 +34,9 @@ apt-get update
 
 # install dependencies
 apt-get install -y python3 openjdk-11-jdk awscli
+# install maven
+apt-get install -y maven
+
 # install jenkins
 apt-get install -y jenkins=${JENKINS_VERSION} unzip
  

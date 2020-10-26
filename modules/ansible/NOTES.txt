@@ -1,0 +1,170 @@
+Status: wip
+
+$> ssh -i ~/.aws/kuber-key-pair ubuntu@
+
+$> sudo su - ansadmin 
+
+$> ssh-keygen
+      /.ssh/id_rsa 
+
+ssh-copy-id ansadmin@<target-server>
+ssh-copy-id ansadmin@localhost
+
+Copy .ssh/id_rsa.pub (copy and paste the token) into k8s master node
+ansadmin$> cd ~/.ssh
+ansadmin$> cat id_rsa.pub
+ssh rsa AAAA......
+
+Go to k8s master node 
+
+k8s-manage-master$> cd ~/.ssh
+k8s-manage-master$> cat authorized_keys
+k8s-manage-master$> cat >> authorized_keys
+ssh rsa AAAA......
+^C 
+
+
+To ansible-server to test connectivity
+ansadmin$> ssh -i ~/.ssh/id_rsa ubuntu@<master k8s node ip>
+
+
+ansadmin$> cd /opt
+ansadmin$> sudo mkdir k8s-lab
+ansadmin$> sudo chown -R ansadmin:ansadmin k8s-lab 
+ansadmin$> cd k8s-lab 
+
+Copy valaxy-deployment.yml and valaxy-service.yml from k8s master node to ansible server 
+
+
+copy Simple-DevOps-Project/Kuberenetes/create-simple-devops-image.yml to 
+ansadmin k8s-lab
+
+ansadmin k8s-lab$> cat > create-simple-devops-image.yml 
+---
+- hosts: ansible-server
+  become: true
+
+  tasks:
+  - name: create docker image using war file
+    command: docker build -t simple-devops-image:latest .
+    args:
+      chdir: /opt/k8s-lab
+
+  - name: create tag to image
+    command: docker tag simple-devops-image renegmedal/simple-devops-image
+
+  - name: push image on to dockerhub
+    command: docker push renegmedal/simple-devops-image
+
+  - name: remove docker images form ansible server
+    command: docker rmi simple-devops-image:latest renegmedal/simple-devops-image
+    ignore_errors: yes
+^C 
+
+ansadmin k8s-lab$> vi hosts 
+[ansible-server]
+localhost
+
+[kubernetes]
+<k8s-master node ip>
+
+
+Copy  Simple-DevOps-Project/Kuberenetes/kubernetes-valaxy-deployment.yml to ansadmin k8s-lab
+
+ansadmin k8s-lab$> cat > kubernetes-valaxy-deployment.yml
+---
+- name: Create pods using deployment 
+  hosts: kubernetes 
+  # become: true
+  user: ubuntu
+ 
+  tasks: 
+  - name: create a deployment
+    command: kubectl apply -f valaxy-deploy.yml
+ 
+  - name: update deployment with new pods if image updated in docker hub
+    command: kubectl rollout restart deployment.v1.apps/valaxy-deployment
+^C
+
+
+----------------------------------------------------------------------------------------
+Copy  Simple-DevOps-Project/Kuberenetes/kubernetes-valaxy-service.yml to ansadmin k8s-lab
+
+ansadmin k8s-lab$> cat > kubernetes-valaxy-service.yml
+---
+- name: create service for deployment
+  hosts: kubernetes
+  # become: true
+  user: ubuntu
+
+  tasks:
+  - name: create a service
+    command: kubectl apply -f valaxy-service.yml
+^C 
+----------------------------------------------------------------------------------------
+Copy  Simple-DevOps-Project/Kuberenetes/Dockerfile to ansadmin k8s-lab
+
+ansadmin k8s-lab$> cat > Dockerfile
+FROM tomcat:latest
+
+MAINTAINER AR Shankar
+
+COPY ./webapp.war /usr/local/tomcat/webapps
+----------------------------------------------------------------------------------------
+ansadmin k8s-lab$> cat > valaxy-deploy.yml
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: valaxy-deployment
+spec:
+  selector:
+    matchLabels:
+      app: valaxy-devops-project
+  replicas: 2 # tells deployment to run 2 pods matching the template
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  template:
+    metadata:
+      labels:
+        app: valaxy-devops-project
+    spec:
+      containers:
+      - name: valaxy-devops-project
+        image: yankils/simple-devops-image
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+
+----------------------------------------------------------------------------------------
+ansadmin k8s-lab$> cat > valaxy-service.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: valaxy-service
+  labels:
+    app: valaxy-devops-project
+spec:
+  selector:
+    app: valaxy-devops-project
+  type: LoadBalancer
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 31200
+
+
+
+
+
+ansadmin k8s-lab$> ls (5 files)
+ 
+
+
+
+
+
+

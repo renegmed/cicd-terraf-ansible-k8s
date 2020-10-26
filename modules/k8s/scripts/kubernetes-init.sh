@@ -21,6 +21,7 @@ if [ "`echo -n $DEVICE_FS`" == "" ] ; then
   mkfs.ext4 /dev/data/volume1
 fi
 
+# sudo hostname k8s-manage
 sudo apt-get update
 curl https://s3.amazonaws.com/aws-cli/awscli-bundle.zip -o awscli-bundle.zip
 sudo apt-get install -y unzip python
@@ -39,3 +40,8 @@ sudo mv kops-linux-amd64 /usr/local/bin/kops
 rm -rf awscli-bundle 
 rm awscli-bundle.zip 
 
+sudo su -
+mkdir ~/.kube 
+cp /home/ubuntu/.kube/config ~/.kube
+
+# export KOPS_STATE_STORE=s3://${KOPS_STATE_BUCKET}

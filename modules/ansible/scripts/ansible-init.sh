@@ -1,16 +1,17 @@
 #!/bin/bash
 
-sudo hostname ansible-control-node
+#sudo hostname ansible-control-node
 sudo apt-get update 
 sudo apt-get install -y python python-pip
 sudo pip install ansible
 
 sudo mkdir /etc/ansible
-#sudo useradd ${ANSIBLE_USER} 
+# sudo useradd ${ANSIBLE_USER} 
 # sudo passwd ${ANSIBLE_PASSWORD}  
-sudo useradd -p $(openssl passwd -1 "${ANSIBLE_PASSWORD}") "${ANSIBLE_USER}"
+# sudo useradd -p $(openssl passwd -1 "${ANSIBLE_PASSWORD}") "${ANSIBLE_USER}"
+sudo useradd -p $(openssl passwd -1 "${ANSIBLE_PASSWORD}") -m ${ANSIBLE_USER} -s /bin/bash
 
-# sudo echo "${ANSIBLE_USER} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+sudo echo "${ANSIBLE_USER} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 sudo su - ${ANSIBLE_USER}
 
@@ -38,7 +39,7 @@ docker --version
 # Replace line/ Remove and Insert line on /etc/ssh/sshd_config
 #  PasswordAuthentication yes 
 sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-sevice sshd reload
+service sshd reload
  
  
   

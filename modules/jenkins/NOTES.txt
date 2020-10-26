@@ -32,15 +32,97 @@ http://3.238.18.126:8080
 
 Plugins
     Publish Over SSH 
+    Maven Integration
+    Maven Invoker
 
 On docker server, enable ssh
     $> vi /etc/ssh/sshd_config 
         PasswordAuthentication yes 
-    $> systemctl sshd reload 
+    $> sudo systemctl reload sshd
+    $> sudo systemctl status sshd
 
-Jenkins - Manage Jenkins - Configure System - Publish over SSH
-    SSH Server 
-        Name: docker-host
-        Hostname:  <docker server ip address - $> ip addr>
-        Username: dockeradmin 
-        Phrasename: dockeradmin (password)
+--------------------------------------------------------------
+Ansible server 
+
+Configure System -> Publish Over SSH
+    Passphrase
+    SSH Servers (add)
+        Name:       ansible-server
+        Hostname    <from ansible-server command line ip addr>
+        Username    ansadmin
+        checked Use password authentication or use a different key 
+        Passphrase/Password     password123 
+
+--------------------------------------------------------------
+Maven setup 
+
+Apache Maven 3.6.0
+Maven home: /usr/share/maven
+
+Configure Global Tools
+    Maven    
+        Name: M2 
+        Maven home: /usr/share/maven
+
+    uncheck Install Automatically 
+
+
+++++++++++++++++++++++++++++++++++++++++++
+NOTE: Jenkins home is in /var/lib/jenkins
+++++++++++++++++++++++++++++++++++++++++++
+
+----------------------------------------------------
+
+New Job: Kubernetes-CI-Job
+Type: Maven Project 
+
+Description: Creating docker image 
+Source Code Management:
+    Git:
+        Repository URL  https://github.com/renegmed/hello-world.git 
+Build Triggers:
+    Poll SCM checked
+        Schedule   * * * * *
+Build:
+    Root POM  pom.xml
+    Goals and options:  clean install package
+
+Post-build Actions:
+    Send build artifacts over SSH 
+        SSH Publishers:
+            SSH Server 
+                Name: ansible-server 
+                Transfers:
+                    Transfer Set 
+                        Source files: webapp/target/*.war 
+                        Remove prefix: webapp/target
+                        Remote directory: //opt//k8s-lab 
+                        Exec command
+                            ansible-playbook -i /opt/k8s-lab/hosts /opt/k8s-lab/create-simple-devops-image.yml;
+----------------------------------------------------
+New Job: Kubernetes-CD-Job
+Type: Freestyle Project
+
+Description: Creating kubernetes deployment  
+
+Post-build Actions
+    Send build artifacts over SSH 
+        SSH Publishers 
+            SSH Server 
+                Name: ansible server 
+                Transfers
+                    Transfer Set 
+                        Exec command 
+                            ansible-playbook -i /opt/k8s-lab/hosts /opt/k8s-lab/kubernetes-valaxy-deployment.yml;
+                            ansible-playbook -i /opt/k8s-lab/hosts /opt/k8s-lab/kubernetes-valaxy-service.yml;
+----------------------------------------------------
+Configure Kubernetes-CI-Job
+
+Add post-build action 
+    Build-other projects 
+        Projects to build: Kubernetes-CD-Job
+----------------------------------------------------
+
+check the k8s manage master for exising pods, deployment, service 
+
+

@@ -1,7 +1,9 @@
 data "template_file" "k8s-init" {
   template = file("modules/k8s/scripts/kubernetes-init.sh")
   vars = {
-    DEVICE            = var.instance_device_name  
+    DEVICE                = var.instance_device_name 
+    ROUTE53_NAME          = var.route_name
+    KOPS_STATE_BUCKET     = "" # aws_s3_bucket.kops_state_bucket.id
   }
 }
 

@@ -13,12 +13,12 @@ Default output format [None]:
 
 2. Route53 - create private hosted zone 
     goldmedal.tech 
-    vpc - main
+    vpc - vpc-dev
 
-3. Create s3 bucket 
-    demo.k8s.goldmedal.tech 
-4. 
-    export KOPS_STATE_STORE=s3://demo.k8s.goldmedal.tech
+3. Create s3 bucket (pre-created)
+    k8s.goldmedal.tech
+x 4. 
+    export KOPS_STATE_STORE=s3://k8s.goldmedal.tech
 
 5. 
     ssh-keygen
@@ -26,15 +26,18 @@ Default output format [None]:
 
 6. create cluster 
 
-    kops create cluster --cloud=aws --zones=us-east-1a --name=demo.k8s.goldmedal.tech --dns-zone=goldmedal.tech --dns private 
+    kops create cluster --cloud=aws --zones=us-east-1a --name=k8s.goldmedal.tech --dns-zone=goldmedal.tech --dns private 
 Suggestions:
  * list clusters with: kops get cluster
- * edit this cluster with: kops edit cluster demo.k8s.goldmedal.tech
- * edit your node instance group: kops edit ig --name=demo.k8s.goldmedal.tech nodes
- * edit your master instance group: kops edit ig --name=demo.k8s.goldmedal.tech master-us-east-1a
+ * edit this cluster with: kops edit cluster k8s.goldmedal.tech
+ * edit your node instance group: kops edit ig --name=k8s.goldmedal.tech nodes
+ * edit your master instance group: kops edit ig --name=k8s.goldmedal.tech master-us-east-1a
 
+Finally configure your cluster with: 
 
-    kops edit ig --name=demo.k8s.goldmedal.tech master-us-east-1a  (change machin type to t2.micro)
+    kops update cluster --name k8s.goldmedal.tech --yes
+
+    kops edit ig --name=k8s.goldmedal.tech master-us-east-1a  (change machin type to t2.micro)
 
         Version: kops.k8s.io/v1alpha2
         kind: InstanceGroup
@@ -54,7 +57,7 @@ Suggestions:
           subnets:
           - us-east-1a
 
-    kops update cluster demo.k8s.goldmedal.tech --yes
+    kops update cluster k8s.goldmedal.tech --yes
 
 
 
@@ -63,15 +66,23 @@ Cluster is starting.  It should be ready in a few minutes.
 Suggestions:
  * validate cluster: kops validate cluster --wait 10m
  * list nodes: kubectl get nodes --show-labels
- * ssh to the master: ssh -i ~/.ssh/id_rsa ubuntu@api.demo.k8s.goldmedal.tech
+ * ssh to the master: ssh -i ~/.ssh/id_rsa ubuntu@api.k8s.goldmedal.tech
  * the ubuntu user is specific to Ubuntu. If not using Ubuntu please use the appropriate user based on your OS.
  * read about installing addons at: https://kops.sigs.k8s.io/operations/addons.
 
 kops validate cluster --wait 10m
 
-ssh -i ~/.ssh/id_rsa ubuntu@api.demo.k8s.goldmedal.tech
+ssh -i ~/.ssh/id_rsa ubuntu@api.k8s.goldmedal.tech
 
-ubuntu@ip-172-20-61-42:~$ kubectl get nodes
+NOTE -----------------------
+No need to be a root user
+  ubuntu@ip-172-20-61-42:~$ sudo su - 
+This will cause error 
+root@ip-172-20-53-98:~# kubectl get nodes
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+----------------------------
+
+ubuntu@ip-172-20-53-98:~$ kubectl get nodes
 NAME                            STATUS   ROLES    AGE     VERSION
 ip-172-20-51-125.ec2.internal   Ready    node     3m32s   v1.18.9
 ip-172-20-60-149.ec2.internal   Ready    node     3m21s   v1.18.9
@@ -80,9 +91,57 @@ ip-172-20-61-42.ec2.internal    Ready    master   6m27s   v1.18.9
 
 No need to upgrade kubectl version
 
-uubuntu@ip-172-20-61-42:~$ kubectl version --short
+root@ip-172-20-61-42:~$ kubectl version --short
 Client Version: v1.18.9
 Server Version: v1.18.9
 
-kubectl -f apply deployment.yml
-kubectl -f apply service.yml 
+----------------------------------------------------------------- 
+$> cat > valaxy-deployment.yml 
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: valaxy-deployment
+spec:
+  selector:
+    matchLabels:
+      app: valaxy-devops-project
+  replicas: 2 # tells deployment to run 2 pods matching the template
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  template:
+    metadata:
+      labels:
+        app: valaxy-devops-project
+    spec:
+      containers:
+      - name: valaxy-devops-project
+        image: yankils/simple-devops-image
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+^C 
+----------------------------------------------------------------- 
+$> cat > valaxy-service.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: valaxy-service
+  labels:
+    app: valaxy-devops-project
+spec:
+  selector:
+    app: valaxy-devops-project
+  type: LoadBalancer
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 31200
+-----------------------------------------------------------------      
+
+Delete cluster
+$> kops get cluster
+$> kops delete cluster --name=k8s.goldmedal.tech --state=s3://k8s.goldmedal.tech --yes 

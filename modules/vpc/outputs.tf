@@ -23,7 +23,12 @@ output "availability_zones" {
   description = "list of availability zones"
   value = module.main-vpc.azs
 }
+
 output "k8s_role_name" {
   description = "aim role name"
   value       = aws_iam_instance_profile.k8s-role.name
+}
+
+output "ns-servers" {
+  value = aws_route53_zone.app_route53.name_servers
 }

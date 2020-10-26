@@ -13,3 +13,10 @@ output "public_subnets" {
   description = "List of IDs of public subnets"
   value       = module.main-vpc.public_subnets
 }
+
+output "ns-servers" {
+  value = module.main-vpc.ns-servers
+}
+# output "kops_state_s3_bucker" {
+#     value = module.k8s.kops_state_s3_bucker
+# }
